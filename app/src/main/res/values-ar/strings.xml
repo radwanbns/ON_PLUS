@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Xray Tunnel</string>
+    <string name="update_servers">تحديث السيرفرات</string>
+    <string name="connect">اتصال</string>
+    <string name="disconnect">قطع الاتصال</string>
+    <string name="connected">متصل</string>
+    <string name="connecting">جارٍ الاتصال…</string>
+    <string name="disconnected">غير متصل</string>
+    <string name="import_clipboard">استيراد من الحافظة</string>
+    <string name="subscriptions">الاشتراكات</string>
+    <string name="delete_all">حذف كل السيرفرات</string>
+    <string name="add">إضافة</string>
+    <string name="name">الاسم</string>
+    <string name="url">رابط الاشتراك</string>
+    <string name="close">إغلاق</string>
+    <string name="no_servers">لا توجد سيرفرات. اضغط «تحديث السيرفرات» أو استورد من الحافظة.</string>
+    <string name="no_subs">لا توجد اشتراكات. أضف واحداً من القائمة.</string>
+    <string name="updated_fmt">تم التحديث: %1$d سيرفر</string>
+    <string name="update_failed">فشل التحديث: %1$s</string>
+    <string name="imported_fmt">تم استيراد %1$d سيرفر</string>
+    <string name="nothing_found">لم يتم العثور على روابط صالحة</string>
+</resources>
