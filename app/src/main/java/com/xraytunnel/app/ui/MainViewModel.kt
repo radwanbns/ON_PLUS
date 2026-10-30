@@ -4,10 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.xraytunnel.app.R
-import com.xraytunnel.app.data.LinkParser
+import com.xraytunnel.app.data.Defaults
 import com.xraytunnel.app.data.Repo
+import com.xraytunnel.app.data.Server
 import com.xraytunnel.app.data.SubscriptionUpdater
 import com.xraytunnel.app.vpn.XrayVpnService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +18,6 @@ import kotlinx.coroutines.launch
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repo.get(app)
     val servers = repo.servers
-    val subs = repo.subs
     val selectedId = repo.selectedId
     val vpnState = XrayVpnService.state
 
@@ -29,22 +30,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun str(id: Int, vararg a: Any) = getApplication<Application>().getString(id, *a)
 
-    /** زر Update: يجلب كل الاشتراكات من الروابط الخارجية ويستبدل سيرفراتها. */
+    fun toast(id: Int) { _message.value = str(id) }
+
+    /** زر التحديث: يجلب السيرفرات من الرابط المخفي في Defaults ويستبدل سيرفرات التحديث فقط. */
     fun updateAll() {
         if (_updating.value) return
         viewModelScope.launch {
             _updating.value = true
-            var total = 0
-            var error: String? = null
-            for (sub in repo.subs.value) {
-                try {
-                    val list = SubscriptionUpdater.fetch(sub.url)
-                    if (list.isNotEmpty()) { repo.replaceSub(sub.id, list); total += list.size }
-                } catch (e: Exception) { error = e.message ?: e.javaClass.simpleName }
+            try {
+                val list = SubscriptionUpdater.fetch(Defaults.SUBSCRIPTION_URL)
+                if (list.isEmpty()) _message.value = str(R.string.nothing_found)
+                else { repo.replaceUpdated(list); _message.value = str(R.string.updated_fmt, list.size) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _message.value = str(R.string.update_failed, e.message ?: e.javaClass.simpleName)
+            } finally {
+                _updating.value = false
             }
-            _message.value = if (error != null && total == 0) str(R.string.update_failed, error)
-                             else str(R.string.updated_fmt, total)
-            _updating.value = false
         }
     }
 
@@ -56,7 +59,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun select(id: String) = repo.select(id)
     fun delete(id: String) = repo.delete(id)
-    fun clear() = repo.clear()
-    fun addSub(name: String, url: String) { if (url.isNotBlank()) repo.addSub(name.ifBlank { url }, url.trim()) }
-    fun removeSub(id: String) = repo.removeSub(id)
+    fun save(server: Server) = repo.updateServer(server)
+    fun clearImported() = repo.clearImported()
+
+    fun telegramSeen() = repo.telegramSeen()
+    fun markTelegramSeen() = repo.markTelegramSeen()
 }
