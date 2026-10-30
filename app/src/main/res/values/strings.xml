@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Xray Tunnel</string>
+    <string name="update_servers">Update servers</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connected">Connected</string>
+    <string name="connecting">Connecting…</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="import_clipboard">Import from clipboard</string>
+    <string name="subscriptions">Subscriptions</string>
+    <string name="delete_all">Delete all servers</string>
+    <string name="add">Add</string>
+    <string name="name">Name</string>
+    <string name="url">Subscription URL</string>
+    <string name="close">Close</string>
+    <string name="no_servers">No servers yet. Tap “Update servers” or import from clipboard.</string>
+    <string name="no_subs">No subscriptions. Add one from the menu.</string>
+    <string name="updated_fmt">Updated: %1$d servers</string>
+    <string name="update_failed">Update failed: %1$s</string>
+    <string name="imported_fmt">Imported %1$d servers</string>
+    <string name="nothing_found">No valid links found</string>
+</resources>
