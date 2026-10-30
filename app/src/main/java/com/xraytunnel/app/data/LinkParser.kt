@@ -33,7 +33,7 @@ object LinkParser {
         val net = j.optString("net", "tcp").ifEmpty { "tcp" }
         val tls = j.optString("tls")
         return Server(
-            name = j.optString("ps").ifEmpty { j.optString("add") },
+            name = j.optString("ps").ifEmpty { "VMess" },
             protocol = "vmess",
             address = j.optString("add"),
             port = j.optString("port").toIntOrNull() ?: 443,
@@ -64,7 +64,7 @@ object LinkParser {
             else -> q("path")
         }
         return Server(
-            name = u.fragment ?: "$host:$port",
+            name = u.fragment?.takeIf { it.isNotBlank() } ?: protocol.uppercase(),
             protocol = protocol,
             address = host,
             port = port,
@@ -108,7 +108,7 @@ object LinkParser {
         val host = hostPort.substringBeforeLast(":").trim('[', ']')
         val port = hostPort.substringAfterLast(":").toIntOrNull() ?: return null
         return Server(
-            name = name.ifEmpty { "$host:$port" },
+            name = name.ifEmpty { "Shadowsocks" },
             protocol = "shadowsocks",
             address = host, port = port,
             method = userInfo.substringBefore(":"),
@@ -122,7 +122,7 @@ object LinkParser {
         val ui = u.userInfo ?: ""
         val cred = if (ui.isEmpty()) "" else if (ui.contains(":")) Uri.decode(ui) else (b64(ui) ?: ui)
         return Server(
-            name = u.fragment ?: "$host:${u.port}",
+            name = u.fragment?.takeIf { it.isNotBlank() } ?: "SOCKS",
             protocol = "socks", address = host,
             port = if (u.port > 0) u.port else 1080, secret = cred
         )

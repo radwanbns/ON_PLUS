@@ -5,16 +5,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
-import org.json.JSONObject
 
 class Repo private constructor(ctx: Context) {
     private val sp = ctx.applicationContext.getSharedPreferences("xray_tunnel", Context.MODE_PRIVATE)
 
     private val _servers = MutableStateFlow(readServers())
     val servers: StateFlow<List<Server>> = _servers.asStateFlow()
-
-    private val _subs = MutableStateFlow(readSubs())
-    val subs: StateFlow<List<Subscription>> = _subs.asStateFlow()
 
     private val _selected = MutableStateFlow(sp.getString("selected", null))
     val selectedId: StateFlow<String?> = _selected.asStateFlow()
@@ -24,13 +20,34 @@ class Repo private constructor(ctx: Context) {
     fun select(id: String) { _selected.value = id; sp.edit().putString("selected", id).apply() }
 
     // ---------- servers ----------
-    fun addServers(list: List<Server>) = saveServers(_servers.value + list)
 
-    fun replaceSub(subId: String, list: List<Server>) =
-        saveServers(_servers.value.filter { it.subId != subId } + list.map { it.copy(subId = subId) })
+    /** إضافة سيرفرات من الحافظة (قابلة للتعديل والحذف). */
+    fun addServers(list: List<Server>) = saveServers(_servers.value + list.map { it.copy(subId = "") })
 
-    fun delete(id: String) = saveServers(_servers.value.filter { it.id != id })
-    fun clear() = saveServers(emptyList())
+    /** استبدال سيرفرات التحديث بالقائمة الجديدة، دون المساس بسيرفرات الحافظة. */
+    fun replaceUpdated(list: List<Server>) {
+        val oldSelected = selectedServer()?.takeIf { !it.isEditable }
+        val fresh = list.map { it.copy(subId = Defaults.UPDATE_SUB_ID) }
+        saveServers(fresh + _servers.value.filter { it.isEditable })
+        // نحافظ على السيرفر المختار بعد التحديث (المعرّفات تتغير مع كل تحديث)
+        if (oldSelected != null) {
+            fresh.firstOrNull { it.name == oldSelected.name && it.address == oldSelected.address && it.port == oldSelected.port }
+                ?.let { select(it.id) }
+        }
+    }
+
+    /** تعديل سيرفر من الحافظة فقط. */
+    fun updateServer(updated: Server) {
+        val cur = _servers.value.firstOrNull { it.id == updated.id } ?: return
+        if (!cur.isEditable) return
+        saveServers(_servers.value.map { if (it.id == updated.id) updated.copy(subId = "") else it })
+    }
+
+    /** حذف سيرفر من الحافظة فقط. */
+    fun delete(id: String) = saveServers(_servers.value.filterNot { it.id == id && it.isEditable })
+
+    /** حذف كل سيرفرات الحافظة (سيرفرات التحديث تبقى). */
+    fun clearImported() = saveServers(_servers.value.filterNot { it.isEditable })
 
     private fun saveServers(list: List<Server>) {
         _servers.value = list
@@ -45,34 +62,9 @@ class Repo private constructor(ctx: Context) {
         (0 until a.length()).map { Server.fromJson(a.getJSONObject(it)) }
     } catch (e: Exception) { emptyList() }
 
-    // ---------- subscriptions ----------
-    fun addSub(name: String, url: String) = saveSubs(_subs.value + Subscription(name = name, url = url))
-    fun removeSub(id: String) {
-        saveSubs(_subs.value.filter { it.id != id })
-        saveServers(_servers.value.filter { it.subId != id })
-    }
-
-    private fun saveSubs(list: List<Subscription>) {
-        _subs.value = list
-        sp.edit().putString("subs", JSONArray().apply {
-            list.forEach { put(JSONObject().put("id", it.id).put("name", it.name).put("url", it.url)) }
-        }.toString()).apply()
-    }
-
-    private fun readSubs(): List<Subscription> {
-        if (!sp.contains("subs")) {
-            return if (Defaults.SUBSCRIPTION_URL.isNotBlank())
-                listOf(Subscription(name = Defaults.SUBSCRIPTION_NAME, url = Defaults.SUBSCRIPTION_URL))
-            else emptyList()
-        }
-        return try {
-            val a = JSONArray(sp.getString("subs", "[]"))
-            (0 until a.length()).map {
-                val o = a.getJSONObject(it)
-                Subscription(o.getString("id"), o.getString("name"), o.getString("url"))
-            }
-        } catch (e: Exception) { emptyList() }
-    }
+    // ---------- telegram dialog ----------
+    fun telegramSeen(): Boolean = sp.getBoolean("tg_seen", false)
+    fun markTelegramSeen() = sp.edit().putBoolean("tg_seen", true).apply()
 
     companion object {
         @Volatile private var inst: Repo? = null

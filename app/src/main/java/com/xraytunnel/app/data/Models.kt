@@ -3,8 +3,6 @@ package com.xraytunnel.app.data
 import org.json.JSONObject
 import java.util.UUID
 
-data class Subscription(val id: String = UUID.randomUUID().toString(), val name: String, val url: String)
-
 /** سيرفر واحد، يغطي: vmess, vless, trojan, shadowsocks, socks, hysteria2, wireguard */
 data class Server(
     val id: String = UUID.randomUUID().toString(),
@@ -34,6 +32,9 @@ data class Server(
     val reserved: String = "",     // WireGuard "1,2,3"
     val mtu: Int = 1280
 ) {
+    /** سيرفرات الحافظة فقط (subId فارغ) قابلة للتعديل والحذف؛ سيرفرات التحديث مقفلة. */
+    val isEditable: Boolean get() = subId.isBlank()
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id); put("subId", subId); put("name", name); put("protocol", protocol)
         put("address", address); put("port", port); put("secret", secret); put("method", method)
